@@ -27,7 +27,7 @@ bool alertState[MAX_SENSORS] = { false };
 static char idBuf[32];
 static char tankNameBuf[32];
 static char topicBuf[64];
-static char screenMsg[256];  // Aggregated screen text
+static char screenMsg[512];  // Aggregated screen text (fits up to MAX_SENSORS lines)
 static char msgBuf[160];     // Alerts / telegram messages
 static char dtBuf[16];       // Temperature as string for MQTT
 

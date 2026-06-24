@@ -2,12 +2,12 @@
 
 #include <HTTPClient.h>
 #include <WiFi.h>
-#include <WiFiClientSecure.h>
+#include "Config.h"  // brings in Secrets.h (optional TELEGRAM_ROOT_CA)
 
 TelegramAlert::TelegramAlert(const char* botToken, const char* chatId)
   : _botToken(botToken), _chatId(chatId) {}
 
-// Minimal percent-encoding so spaces/°/symbols don't break the GET request.
+// Minimal percent-encoding so spaces/°/symbols don't break the request body.
 String TelegramAlert::urlEncode(const char* msg) {
   String out;
   for (const char* p = msg; *p; p++) {
@@ -26,16 +26,29 @@ String TelegramAlert::urlEncode(const char* msg) {
 void TelegramAlert::sendMessage(const char* message) {
   if (WiFi.status() != WL_CONNECTED) return;
 
-  WiFiClientSecure client;
-  client.setInsecure();  // Skip cert verification (simple)
+  // Configure TLS once on the reused client (avoids per-alert object churn).
+  if (!_tlsConfigured) {
+#ifdef TELEGRAM_ROOT_CA
+    _secureClient.setCACert(TELEGRAM_ROOT_CA);  // Pinned: certificate is verified
+#else
+    _secureClient.setInsecure();  // No pinning; define TELEGRAM_ROOT_CA to verify
+    Serial.println("Telegram: TLS certificate NOT verified (set TELEGRAM_ROOT_CA to pin)");
+#endif
+    _tlsConfigured = true;
+  }
 
   HTTPClient https;
-  String url = String("https://api.telegram.org/bot") + _botToken
-               + "/sendMessage?chat_id=" + _chatId
-               + "&text=" + urlEncode(message);
+  // POST so chat_id/text travel in the body, not the URL (keeps message text out
+  // of logs/proxies). The bot token in the path is required by the Telegram API.
+  String url = String("https://api.telegram.org/bot") + _botToken + "/sendMessage";
+  if (!https.begin(_secureClient, url)) {
+    Serial.println("Telegram: begin() failed");
+    return;
+  }
+  https.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-  https.begin(client, url);
-  int httpCode = https.GET();
+  String body = String("chat_id=") + _chatId + "&text=" + urlEncode(message);
+  int httpCode = https.POST(body);
 
   if (httpCode > 0) {
     Serial.printf("Telegram alert sent (Response: %d)\n", httpCode);
