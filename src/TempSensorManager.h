@@ -11,6 +11,7 @@ public:
 
   void begin();
   int getCount();
+  void requestTemperatures();  // Trigger one bus-wide conversion per cycle
   float getTempC(int index);
   String getId(int index);
   void printAddresses();

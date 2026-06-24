@@ -13,16 +13,15 @@ void MqttManager::begin(WiFiClient& wifiClient, std::function<void(char*, byte*,
 }
 
 void MqttManager::connect() {
-  int tries = 0;
-  while (!_client.connected() && tries < 10) {
-    Serial.print("Connecting to MQTT ");
-    if (_client.connect(_clientId, _user, _password)) {
-      Serial.println("was successful");
-    } else {
-      Serial.println("failed, retrying...");
-      delay(5000);
-      tries++;
-    }
+  // Single non-blocking attempt; the main loop retries each cycle so we never
+  // stall the device (display/sensors) waiting on an unreachable broker.
+  if (_client.connected()) return;
+
+  Serial.print("Connecting to MQTT... ");
+  if (_client.connect(_clientId, _user, _password)) {
+    Serial.println("connected");
+  } else {
+    Serial.printf("failed (state %d), will retry next cycle\n", _client.state());
   }
 }
 

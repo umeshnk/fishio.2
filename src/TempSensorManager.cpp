@@ -20,8 +20,12 @@ int TempSensorManager::getCount() {
   return _count;
 }
 
-float TempSensorManager::getTempC(int index) {
+void TempSensorManager::requestTemperatures() {
   _sensors.requestTemperatures();
+}
+
+float TempSensorManager::getTempC(int index) {
+  if (index < 0 || index >= _count) return DEVICE_DISCONNECTED_C;
   return _sensors.getTempC(_addresses[index]);
 }
 

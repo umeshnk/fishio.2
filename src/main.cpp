@@ -82,6 +82,9 @@ void processSensorsOnce() {
 
   screenMsg[0] = '\0';
 
+  // One bus-wide conversion per cycle (not once per sensor).
+  sensors.requestTemperatures();
+
   for (int i = 0; i < count && i < MAX_SENSORS; i++) {
     const String sensorIdStr = sensors.getId(i);
     strncpy(idBuf, sensorIdStr.c_str(), sizeof(idBuf));
