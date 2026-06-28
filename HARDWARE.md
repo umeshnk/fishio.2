@@ -53,11 +53,14 @@ display signals sit on the same DevKit header side; GPIO13 is left free.
 
 | Sensor pin | ESP32 GPIO |
 | --- | --- |
-| DATA | GPIO25 (+ 4.7 kΩ pull-up to 3V3, one per bus) |
+| DATA | GPIO5 (+ 4.7 kΩ pull-up to 3V3, one per bus) |
 | VDD | 3V3 |
 | GND | GND |
 
-Multiple DS18B20s share GPIO25 on the one-wire bus.
+GPIO5 sits on the display header side. It is a strapping pin, but the OneWire
+pull-up holds it HIGH at boot (the level the strap requires), so it is safe here.
+
+Multiple DS18B20s share GPIO5 on the one-wire bus.
 
 ### Buzzer
 
@@ -115,12 +118,13 @@ Left fully free for ADS1115 (precise ADC), MCP23017 (relay bank), RTC, etc.
 | GPIO | Assignment |
 | --- | --- |
 | 4 | Display CS |
+| 5 | DS18B20 data (strapping, but pulled HIGH at boot) |
 | 13 | spare (free) |
 | 16 | Display DC |
 | 17 | Display RST |
 | 18 | Display SCLK |
 | 23 | Display MOSI |
-| 25 | DS18B20 data |
+| 25 | spare (free) |
 | 26 | Buzzer |
 | 27 | *reserved* Relay 3 |
 | 32 | *reserved* Relay 1 |
@@ -132,7 +136,7 @@ Left fully free for ADS1115 (precise ADC), MCP23017 (relay bank), RTC, etc.
 | 21 / 22 | *reserved* I²C bus |
 | 19 | spare (SPI MISO, unused by GC9A01) |
 | 6–11 | DO NOT USE — flash |
-| 0/2/5/12/15 | avoid — strapping |
+| 0/2/12/15 | avoid — strapping (GPIO5 strap is satisfied by the OneWire pull-up) |
 | 1/3 | UART0 / USB serial |
 
 ## Power notes

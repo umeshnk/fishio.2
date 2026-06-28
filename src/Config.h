@@ -31,7 +31,9 @@
 #define TFT_SPI_SPEED 8000000  // 8 MHz (proven stable on this wiring); raise to test
 
 // ====== DS18B20 (OneWire) ======
-#define ONE_WIRE_BUS 25  // Shared bus; 4.7k pull-up to 3V3
+// GPIO5 is on the display header side. It's a strapping pin, but the 4.7k
+// pull-up holds it HIGH at boot, which is exactly what the strap requires.
+#define ONE_WIRE_BUS 5  // Shared bus; 4.7k pull-up to 3V3
 #define MAX_SENSORS 16
 
 // ====== Buzzer (passive piezo, LEDC PWM) ======
