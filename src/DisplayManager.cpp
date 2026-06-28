@@ -23,10 +23,6 @@ bool DisplayManager::begin() {
   return true;
 }
 
-void DisplayManager::displayText(const String& text) {
-  displayText(text.c_str());
-}
-
 void DisplayManager::displayText(const char* text) {
   gfx->fillScreen(BLACK);
   gfx->setTextColor(WHITE);
@@ -34,8 +30,4 @@ void DisplayManager::displayText(const char* text) {
   // The round panel is 240x240; nudge in from the edge so text clears the bezel.
   gfx->setCursor(20, 40);
   gfx->println(text);
-}
-
-void DisplayManager::clear() {
-  gfx->fillScreen(BLACK);
 }

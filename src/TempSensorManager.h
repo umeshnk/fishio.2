@@ -14,7 +14,6 @@ public:
   void requestTemperatures();  // Trigger one bus-wide conversion per cycle
   float getTempC(int index);
   String getId(int index);
-  void printAddresses();
 
 private:
   OneWire _oneWire;

@@ -29,15 +29,6 @@ float TempSensorManager::getTempC(int index) {
   return _sensors.getTempC(_addresses[index]);
 }
 
-void TempSensorManager::printAddresses() {
-  for (int i = 0; i < _count; i++) {
-    Serial.print("Sensor ");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.println(_sensors.getTempC(_addresses[i]));
-  }
-}
-
 String TempSensorManager::getId(int index) {
   if (index >= _count) return "";
   return _ids[index];

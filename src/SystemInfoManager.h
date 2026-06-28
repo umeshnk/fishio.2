@@ -49,8 +49,4 @@ public:
       lastPublish = now;
     }
   }
-
-  void setInterval(unsigned long ms) {
-    publishInterval = ms;
-  }
 };

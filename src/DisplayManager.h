@@ -6,7 +6,5 @@
 class DisplayManager {
 public:
   static bool begin();
-  static void displayText(const String& text);
   static void displayText(const char* text);
-  static void clear();
 };
