@@ -20,12 +20,15 @@
 #define MQTT_CLIENT_ID "FISHIO2_TOWER"
 
 // ====== Display: GC9A01 (SPI / VSPI) ======
+// No BLK pin on this module (backlight hardwired on).
+// All five signals are on the same DevKit header side (GPIO13 was the odd one
+// out, so CS moved to GPIO4). Module header order: VCC, GND, SCL, SDA, DC, CS, RST
 #define TFT_SCLK 18
 #define TFT_MOSI 23
-#define TFT_CS 13
+#define TFT_CS 4
 #define TFT_DC 16
 #define TFT_RST 17
-#define TFT_BL 4  // Backlight (PWM-capable)
+#define TFT_SPI_SPEED 8000000  // 8 MHz (proven stable on this wiring); raise to test
 
 // ====== DS18B20 (OneWire) ======
 #define ONE_WIRE_BUS 25  // Shared bus; 4.7k pull-up to 3V3

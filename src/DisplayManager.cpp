@@ -11,15 +11,12 @@ static Arduino_DataBus* bus =
 static Arduino_GFX* gfx = new Arduino_GC9A01(bus, TFT_RST, 0, true);
 
 bool DisplayManager::begin() {
-  if (!gfx->begin()) {
+  if (!gfx->begin(TFT_SPI_SPEED)) {
     Serial.println("Display init failed!");
     return false;
   }
 
-  // Backlight on (full brightness; swap for ledc PWM for dimming).
-  pinMode(TFT_BL, OUTPUT);
-  digitalWrite(TFT_BL, HIGH);
-
+  // No BLK pin on this module — backlight is hardwired on.
   gfx->fillScreen(BLACK);
   gfx->setTextColor(WHITE);
   gfx->setTextSize(2);

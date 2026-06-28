@@ -33,16 +33,21 @@ layout, pin assignments, and reserved-for-future provisions.
 GC9A01 is write-only, so MISO is not connected (frees GPIO19). Using the native
 VSPI pins lets the SPI hardware peripheral run at 40–80 MHz.
 
+Rows below are in the module's physical header order (VCC, GND, SCL, SDA, DC,
+CS, RST) for easy soldering.
+
 | Display pin | ESP32 GPIO | Function |
 | --- | --- | --- |
-| SCL | GPIO18 | SPI clock (VSPI SCLK) |
-| SDA | GPIO23 | SPI data (VSPI MOSI) |
-| CS | GPIO13 | Chip select |
-| DC | GPIO16 | Data/command |
-| RST | GPIO17 | Reset |
-| BLK | GPIO4 | Backlight (PWM dimming; tie to 3V3 if module has no driver) |
 | VCC | 3V3 | — |
 | GND | GND | — |
+| SCL | GPIO18 | SPI clock (VSPI SCLK) |
+| SDA | GPIO23 | SPI data (VSPI MOSI) |
+| DC | GPIO16 | Data/command |
+| CS | GPIO4 | Chip select |
+| RST | GPIO17 | Reset |
+
+This module has no BLK pin (backlight hardwired on). CS uses GPIO4 so all five
+display signals sit on the same DevKit header side; GPIO13 is left free.
 
 ### DS18B20 temperature (OneWire)
 
@@ -109,8 +114,8 @@ Left fully free for ADS1115 (precise ADC), MCP23017 (relay bank), RTC, etc.
 
 | GPIO | Assignment |
 | --- | --- |
-| 4 | Display BLK (backlight PWM) |
-| 13 | Display CS |
+| 4 | Display CS |
+| 13 | spare (free) |
 | 16 | Display DC |
 | 17 | Display RST |
 | 18 | Display SCLK |
@@ -133,8 +138,7 @@ Left fully free for ADS1115 (precise ADC), MCP23017 (relay bank), RTC, etc.
 ## Power notes
 
 - GC9A01 logic and DS18B20 run at 3.3 V.
-- Backlight can draw 20–40 mA — don't drive a bare LED from a GPIO; tie to 3V3
-  or use the module's driver / a transistor.
+- This display's backlight is hardwired on (no BLK control pin).
 - For a permanent build, feed clean 3.3 V (or 5 V into VIN) from a dedicated
   regulator rather than USB; add 100 nF decoupling at the display and at any
   DS18B20 on a long cable.
