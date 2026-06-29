@@ -25,11 +25,14 @@ bool alertState[MAX_SENSORS] = { false };
 
 // --- Fixed-size buffers ---
 static char idBuf[32];
-static char tankNameBuf[32];
 static char topicBuf[64];
-static char screenMsg[512];  // Aggregated screen text (fits up to MAX_SENSORS lines)
-static char msgBuf[160];     // Alerts / telegram messages
-static char dtBuf[16];       // Temperature as string for MQTT
+static char msgBuf[160];  // Alerts / telegram messages, boot screens
+static char dtBuf[16];    // Temperature as string for MQTT
+
+// Display dashboard data. nameStore backs the readings' name pointers so they
+// stay valid until showReadings() copies them.
+static char nameStore[MAX_SENSORS][20];
+static DisplayManager::TankReading readings[MAX_SENSORS];
 
 // Timing
 const unsigned long SENSORS_INTERVAL_MS = 10UL * 1000UL;  // 10 seconds between cycles
@@ -65,8 +68,8 @@ void setup() {
   lastSensorsMillis = millis();
 
   const char* ipAddress = wifi.getAddress();
-  snprintf(screenMsg, sizeof(screenMsg), "WiFi Connected\nIP: %s", ipAddress);
-  DisplayManager::displayText(screenMsg);
+  snprintf(msgBuf, sizeof(msgBuf), "WiFi Connected\nIP: %s", ipAddress);
+  DisplayManager::displayText(msgBuf);
 }
 
 void processSensorsOnce() {
@@ -80,11 +83,10 @@ void processSensorsOnce() {
   int count = sensors.getCount();
   if (count < 0) return;
 
-  screenMsg[0] = '\0';
-
   // One bus-wide conversion per cycle (not once per sensor).
   sensors.requestTemperatures();
 
+  int rcount = 0;
   for (int i = 0; i < count && i < MAX_SENSORS; i++) {
     const String sensorIdStr = sensors.getId(i);
     strncpy(idBuf, sensorIdStr.c_str(), sizeof(idBuf));
@@ -92,72 +94,67 @@ void processSensorsOnce() {
 
     float temp = sensors.getTempC(i);
 
-    // Find tank name from Config (TANKS array)
-    tankNameBuf[0] = '\0';
+    // Resolve tank name (Config TANKS array), falling back to the raw id.
+    const char* matched = nullptr;
     for (int j = 0; j < MAX_SENSORS; j++) {
       if (TANKS[j].id == nullptr) continue;
       if (strcmp(idBuf, TANKS[j].id) == 0) {
-        strncpy(tankNameBuf, TANKS[j].name, sizeof(tankNameBuf));
-        tankNameBuf[sizeof(tankNameBuf) - 1] = '\0';
+        matched = TANKS[j].name;
         break;
       }
     }
-    if (tankNameBuf[0] == '\0') {
-      strncpy(tankNameBuf, idBuf, sizeof(tankNameBuf));
-      tankNameBuf[sizeof(tankNameBuf) - 1] = '\0';
-    }
+    strncpy(nameStore[rcount], matched ? matched : idBuf, sizeof(nameStore[rcount]));
+    nameStore[rcount][sizeof(nameStore[rcount]) - 1] = '\0';
+    const char* name = nameStore[rcount];
 
     snprintf(topicBuf, sizeof(topicBuf), "temp/aquarium/%s", idBuf);
 
-    // SENSOR DISCONNECTED?
+    DisplayManager::Status status;
     if (temp == DEVICE_DISCONNECTED_C) {
-      snprintf(screenMsg + strlen(screenMsg),
-               sizeof(screenMsg) - strlen(screenMsg),
-               "%s: error\n", tankNameBuf);
-
-      snprintf(msgBuf, sizeof(msgBuf), "%s sensor disconnected!", tankNameBuf);
+      status = DisplayManager::STATUS_ERROR;
+      snprintf(msgBuf, sizeof(msgBuf), "%s sensor disconnected!", name);
       Serial.println(msgBuf);
       buzzer.alert(5);
-
       if (!alertState[i]) {
         telegram.sendMessage(msgBuf);
         alertState[i] = true;
       }
-      continue;
-    }
+    } else {
+      dtostrf(temp, 4, 2, dtBuf);
+      mqtt.publish(topicBuf, dtBuf);
+      Serial.printf("Published %s (Topic: %s, Temp: %.2fC)\n", name, topicBuf, temp);
 
-    // Publish temperature
-    dtostrf(temp, 4, 2, dtBuf);
-    mqtt.publish(topicBuf, dtBuf);
-
-    Serial.printf("Published %s (Topic: %s, Temp: %.2fC)\n", tankNameBuf, topicBuf, temp);
-
-    snprintf(screenMsg + strlen(screenMsg),
-             sizeof(screenMsg) - strlen(screenMsg),
-             "%s: %.2fC\n", tankNameBuf, temp);
-
-    // Temperature alert checks
-    if (temp < TEMP_LOW || temp > TEMP_HIGH) {
-      snprintf(msgBuf, sizeof(msgBuf),
-               "%s temperature out of range (Temp: %.2fC, Low: %d, High: %dC)",
-               tankNameBuf, temp, TEMP_LOW, TEMP_HIGH);
-      Serial.println(msgBuf);
-      buzzer.alert(3);
-      if (!alertState[i]) {
-        telegram.sendMessage(msgBuf);
-        alertState[i] = true;
+      if (temp < TEMP_LOW || temp > TEMP_HIGH) {
+        status = DisplayManager::STATUS_ALERT;
+        snprintf(msgBuf, sizeof(msgBuf),
+                 "%s temperature out of range (Temp: %.2fC, Low: %d, High: %dC)",
+                 name, temp, TEMP_LOW, TEMP_HIGH);
+        Serial.println(msgBuf);
+        buzzer.alert(3);
+        if (!alertState[i]) {
+          telegram.sendMessage(msgBuf);
+          alertState[i] = true;
+        }
+      } else {
+        status = DisplayManager::STATUS_OK;
+        if (alertState[i]) {
+          snprintf(msgBuf, sizeof(msgBuf),
+                   "%s temperature back to normal (Temp: %.2fC)", name, temp);
+          Serial.println(msgBuf);
+          telegram.sendMessage(msgBuf);
+          buzzer.alert(1);
+          alertState[i] = false;
+        }
       }
-    } else if (alertState[i]) {
-      snprintf(msgBuf, sizeof(msgBuf),
-               "%s temperature back to normal (Temp: %.2fC)", tankNameBuf, temp);
-      Serial.println(msgBuf);
-      telegram.sendMessage(msgBuf);
-      buzzer.alert(1);
-      alertState[i] = false;
     }
+
+    readings[rcount].name = nameStore[rcount];
+    readings[rcount].tempC = temp;
+    readings[rcount].status = status;
+    rcount++;
   }  // end for sensors
 
-  DisplayManager::displayText(screenMsg);
+  DisplayManager::showReadings(readings, rcount);
 }
 
 void loop() {
@@ -172,6 +169,7 @@ void loop() {
   sysInfo.loop();
   mqtt.loop();
   ota.loop();
+  DisplayManager::tick();  // advances the carousel between data updates
 
   delay(10);
 }

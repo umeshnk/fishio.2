@@ -30,6 +30,12 @@
 #define TFT_RST 17
 #define TFT_SPI_SPEED 8000000  // 8 MHz (proven stable on this wiring); raise to test
 
+// ---- Display layout ----
+#define DISPLAY_CAROUSEL 0  // one tank at a time, big, auto-cycling (status ring)
+#define DISPLAY_LIST 1      // all tanks as rows at once
+#define DISPLAY_MODE DISPLAY_LIST  // <- set to DISPLAY_LIST for the list view
+#define CAROUSEL_INTERVAL_MS 3000      // carousel: seconds-per-tank dwell time
+
 // ====== DS18B20 (OneWire) ======
 // GPIO5 is on the display header side. It's a strapping pin, but the 4.7k
 // pull-up holds it HIGH at boot, which is exactly what the strap requires.

@@ -9,13 +9,17 @@ and a passive buzzer. Designed with headroom for relay/solenoid control
 (heaters, lights, pumps) and analog probes (pH, TDS, ...) — see
 [HARDWARE.md](HARDWARE.md).
 
+📖 A full **HTML user manual** (hardware, pin layout, wiring diagrams, build
+and troubleshooting) lives at [docs/manual.html](docs/manual.html) — open it in
+any browser.
+
 ## Hardware
 
 | Component   | Detail                                            |
 | ----------- | ------------------------------------------------- |
 | MCU         | ESP32-WROOM-32D (DevKit)                           |
 | Display     | GC9A01 240×240 round IPS LCD, SPI                  |
-| Temperature | DS18B20 on OneWire (GPIO25, shared bus)            |
+| Temperature | DS18B20 on OneWire (GPIO5, shared bus)             |
 | Buzzer      | Passive piezo, LEDC PWM (GPIO26)                   |
 
 Full pin allocation and future-expansion provisions are documented in
@@ -33,6 +37,18 @@ the display. Out-of-range temps or sensor disconnects raise a buzzer + Telegram
 alert (debounced per sensor). Device health is published to
 `system/<clientId>/status` every 60 s.
 
+## Display layouts
+
+The round dashboard has two layouts, selected by `DISPLAY_MODE` in
+[`src/Config.h`](src/Config.h):
+
+- `DISPLAY_CAROUSEL` — one tank at a time, large, auto-cycling with a colored
+  status ring (dwell time set by `CAROUSEL_INTERVAL_MS`).
+- `DISPLAY_LIST` — all tanks as rows on a single screen.
+
+Status colors: **green** = in range, **red** = out of range, **yellow** =
+sensor error/disconnected.
+
 ## Setup
 
 1. Copy `src/Secrets.h.example` to `src/Secrets.h` and fill in WiFi, Telegram,
@@ -42,13 +58,24 @@ alert (debounced per sensor). Device health is published to
 ## Build & flash
 
 ```bash
-pio run                      # build
+pio run                      # build the main firmware
 pio run --target upload      # flash over USB
 pio device monitor           # serial monitor (115200)
 ```
 
 After the first USB flash, updates can be pushed over the air (password-protected
 ArduinoOTA).
+
+### Display diagnostic
+
+A standalone `diag` environment brings up the GC9A01 (color fills, shapes, text)
+independently of the main firmware — useful for isolating wiring vs. SPI-speed
+issues:
+
+```bash
+pio run -e diag -t upload
+pio device monitor
+```
 
 ### Dependencies
 

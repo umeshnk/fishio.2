@@ -30,8 +30,10 @@ layout, pin assignments, and reserved-for-future provisions.
 
 ### GC9A01 display (SPI / VSPI)
 
-GC9A01 is write-only, so MISO is not connected (frees GPIO19). Using the native
-VSPI pins lets the SPI hardware peripheral run at 40–80 MHz.
+GC9A01 is write-only, so MISO is not connected (frees GPIO19). The native VSPI
+pins drive the SPI hardware peripheral. The firmware runs the bus at 8 MHz
+(`TFT_SPI_SPEED` in Config.h) — proven stable on jumper-wire builds; raise it for
+a soldered board if it stays clean.
 
 Rows below are in the module's physical header order (VCC, GND, SCL, SDA, DC,
 CS, RST) for easy soldering.
